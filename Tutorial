@@ -1,0 +1,104 @@
+!=====================================================================================================
+!=====================================================================================================
+!Coding in Fortran::
+!=====================================================================================================
+!=====================================================================================================
+
+!1)	create a new fortran DLL project in code::blocks
+!2) in the build options set the compiler to the GNU fortran (gFortran) compiler this comes with the MinGW setup
+!3) in the build options it's necessary to import standard libraries so they won't be required in the final DLL:
+!		in the settings - compiler under the GNU fortran compiler linker settings other linker options: add the following:
+!			-static 
+!4)	Prevent functions being renamed in the DLL for tidyness::
+!		in build options under compiler-settings -> other compiler options: enter the following command
+!			-fno-underscoring
+!5)	I don't know what this does exactly except that it sends a command to the compiler and increases stability 
+!		under linker settings -> other linker options:: add the following
+!			-Wl,--kill-at
+!6)	Now the compiler is set-up to compile a DLL, write your functions and subs as usual as per the VBA data types::
+
+! 		Fortran data types      VBA/Visual Basic data types (passed ByRef U.O.N.)
+! 		----------------------  -------------------------------------------------
+! 		INTEGER*2               Integer
+! 		INTEGER*4               Long
+! 		REAL                    Single
+! 		REAL*4                  Single
+! 		DOUBLE PRECISION        Double
+! 		REAL*8                  Double
+! 		LOGICAL*2               Integer
+! 		LOGICAL*4               Boolean/Long
+! 		CHARACTER*n             String*n (Passed ByVal) 
+
+!7) add a global pointer for the function to be called from VBA. 
+!		it is the same for both subs and functions, Note that this must come after 'Implicit None' if present.
+!			INCLUDE THE EXCLAMATION POINT!!!! -> !GCC$
+!			!GCC$ ATTRIBUTES DLLEXPORT,STDCALL:: NameGoesHere
+
+
+'======================================================================================================
+'======================================================================================================
+'Coding in VBA::
+'======================================================================================================
+'======================================================================================================
+
+'1)	in workbook module change the directory to location of workbook::
+
+		CODE::
+		=====================================
+		Private Sub Workbook_Open()
+
+			ChDir (ThisWorkbook.Path)
+			Application.CalculateFull
+
+		End Sub
+		======================================
+		
+'2)	Define new function in new module
+	
+		CODE::
+		======================================
+		Option Base 1																												' this sets arrays to start at 1 rather than 0
+		Option Explicit																												' All variables must be defined
+		
+		Public Declare Sub <subname> Lib "mydll.dll" Alias "aliasname" (var1 As Type, var2 as type)									'Alias is optional if function name matches the name in the .def file, Variables are passed by reference
+		Public Declare function <functionname> Lib "mydll.dll" Alias "aliasname" (var1 As Type, var2 as type) as type				'Don't forget to append as <type> e.g. integer, Single etc. or a BAD DLL Calling convention error will occur
+		======================================
+		
+		
+'3)	Call functions as per normal VBA use
+
+
+'4)	Troubleshooting
+'==================
+'	A)	Run-Time error '53':
+'		File not found: <name of dll>
+			
+'			This generally occurs due to directory not being set - Try full path and check all spelling errors
+'			Also Check that -static is added to linker settings or file may require additional DLL files to run
+
+'	B)	Run-Time error '453':
+'		Can't find DLL entry point <function> in <name of DLL>
+
+'			Name of the function is not correct: please check your .DEF file for the actual function name and define it in an ALIAS if required
+
+'	C)	Run-Time error '49':
+'		BAD DLL Calling Convention
+
+'			the way the DLL function is being called is incorrect:: Double check type of the function and variables are set - Refer to 2
+
+'	D)	Excel just crashes without error
+
+'			Issue is likely in what is being passed between the programs, Set up a simple function and check that DLL is working, then double check all required variables are being passed
+
+
+
+
+--
+instead of -static I have used:
+-static-libgcc -static -libgfortran (these commands do not appear to work)
+--
+		
+		
+		
+		
+		
